@@ -29,6 +29,11 @@ dependencies {
 
     // Meteor
     implementation(libs.meteor.client)
+
+    // Testing
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
 java {
@@ -70,6 +75,10 @@ tasks {
         filesMatching("fabric.mod.json") {
             expand(propertyMap)
         }
+    }
+
+    test {
+        useJUnitPlatform()
     }
 
     jar {

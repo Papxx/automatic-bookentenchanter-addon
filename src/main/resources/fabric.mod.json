@@ -1,25 +1,22 @@
 {
   "schemaVersion": 1,
-  "id": "addon-template",
+  "id": "book-enchanter",
   "version": "${version}",
-  "name": "Addon Template",
-  "description": "An addon template for Meteor Client addons.",
+  "name": "Book Enchanter",
+  "description": "Meteor Client addon that automatically enchants books at the enchanting table until a chosen target enchantment is offered.",
   "authors": [
-    "seasnail"
+    "Tore"
   ],
   "contact": {
-    "sources": "https://github.com/MeteorDevelopment/meteor-addon-template"
+    "sources": "https://github.com/Tore/book-enchanter"
   },
-  "icon": "assets/template/icon.png",
+  "icon": "assets/book-enchanter/icon.png",
   "environment": "client",
   "entrypoints": {
     "meteor": [
-      "com.example.addon.AddonTemplate"
+      "de.tore.bookenchanter.BookEnchanterAddon"
     ]
   },
-  "mixins": [
-    "addon-template.mixins.json"
-  ],
   "custom": {
     "meteor-client:color": "225,25,25",
     "modmenu": {
