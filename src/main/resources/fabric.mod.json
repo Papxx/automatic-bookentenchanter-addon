@@ -8,7 +8,7 @@
     "Tore"
   ],
   "contact": {
-    "sources": "https://github.com/Tore/book-enchanter"
+    "sources": "https://github.com/Papxx/automatic-bookentenchanter-addon"
   },
   "icon": "assets/book-enchanter/icon.png",
   "environment": "client",

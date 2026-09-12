@@ -31,7 +31,6 @@ public class BookEnchanterAddon extends MeteorAddon {
 
     @Override
     public GithubRepo getRepo() {
-        // TODO: replace with the real repository once it is published.
-        return new GithubRepo("Tore", "book-enchanter");
+        return new GithubRepo("Papxx", "automatic-bookentenchanter-addon");
     }
 }
