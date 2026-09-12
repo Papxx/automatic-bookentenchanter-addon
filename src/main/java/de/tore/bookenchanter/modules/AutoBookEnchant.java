@@ -15,20 +15,28 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.orbit.EventHandler;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.tags.EnchantmentTags;
 import net.minecraft.world.inventory.EnchantmentMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Automatically enchants books at an enchanting table until a chosen target enchantment is offered
@@ -212,6 +220,36 @@ public class AutoBookEnchant extends Module {
         if (activeTargets().isEmpty()) {
             warning("Keine Ziel-Verzauberung aktiv - bitte erst eine Kategorie aufklappen und ein Ziel anhaken.");
             toggle();
+            return;
+        }
+
+        warnAboutTargetsMissingFromTable();
+    }
+
+    /**
+     * Warns about active targets the server does not list in {@code #minecraft:in_enchanting_table}.
+     * A datapack or server change can remove entries, and those targets would never be offered.
+     */
+    private void warnAboutTargetsMissingFromTable() {
+        if (mc.level == null) return;
+
+        Registry<Enchantment> registry = mc.level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
+        Set<String> offeredByTable = new HashSet<>();
+        for (Holder<Enchantment> holder : registry.getTagOrEmpty(EnchantmentTags.IN_ENCHANTING_TABLE)) {
+            String id = idOf(holder);
+            if (id != null) offeredByTable.add(id);
+        }
+
+        // An empty tag means it has not been synced yet - that is not a datapack change.
+        if (offeredByTable.isEmpty()) return;
+
+        List<String> missing = new ArrayList<>();
+        for (String id : activeTargets().keySet()) {
+            if (!offeredByTable.contains(id)) missing.add(id);
+        }
+
+        if (!missing.isEmpty()) {
+            warning("Dieser Server bietet folgende Ziele nicht am Tisch an: " + String.join(", ", missing));
         }
     }
 
@@ -290,9 +328,18 @@ public class AutoBookEnchant extends Module {
             return;
         }
 
-        handleResult(result);
-        InvUtils.shiftClick().slotId(ITEM_SLOT);
+        boolean hit = handleResult(result);
+
+        // DROP throws the junk book straight out of the table slot, which also keeps it from
+        // filling the inventory - the reason the setting exists.
+        if (!hit && junkBooks.get() == JunkBooks.DROP) InvUtils.drop().slotId(ITEM_SLOT);
+        else InvUtils.shiftClick().slotId(ITEM_SLOT);
+
         resultTakeAttempted = true;
+
+        if (hit && targetCount.get() > 0 && hits >= targetCount.get()) {
+            stop("Ziel-Anzahl von " + targetCount.get() + " erreicht.");
+        }
     }
 
     private void ensureLapis(EnchantmentMenu menu) {
@@ -405,6 +452,12 @@ public class AutoBookEnchant extends Module {
 
         Registry<Enchantment> registry = mc.level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
         Holder<Enchantment> holder = registry.asHolderIdMap().byId(rawId);
+
+        return idOf(holder);
+    }
+
+    /** Registry path of a holder, or {@code null} if it is unknown or not a vanilla enchantment. */
+    private String idOf(Holder<Enchantment> holder) {
         if (holder == null) return null;
 
         return holder.unwrapKey()
@@ -414,9 +467,49 @@ public class AutoBookEnchant extends Module {
             .orElse(null);
     }
 
-    /** Hook for the result evaluation added in M6. */
-    private void handleResult(ItemStack result) {
-        // Filled in M6.
+    /**
+     * Evaluates a finished book against the active targets and reports a hit in chat.
+     *
+     * @return whether the book hit at least one target
+     */
+    private boolean handleResult(ItemStack result) {
+        ItemEnchantments stored = result.get(DataComponents.STORED_ENCHANTMENTS);
+        if (stored == null || stored.isEmpty()) return false;
+
+        Map<String, Integer> onBook = new LinkedHashMap<>();
+        for (Object2IntMap.Entry<Holder<Enchantment>> entry : stored.entrySet()) {
+            String id = idOf(entry.getKey());
+            if (id != null) onBook.put(id, entry.getIntValue());
+        }
+
+        Map<String, Integer> active = activeTargets();
+        if (!OfferEvaluator.matches(onBook, active)) return false;
+
+        hits++;
+        if (notify.get()) info("Treffer: " + describe(stored, active));
+
+        return true;
+    }
+
+    /** Formats a book as "Sharpness IV (+ Unbreaking III)", targets first, extras in brackets. */
+    private String describe(ItemEnchantments stored, Map<String, Integer> targets) {
+        List<String> matched = new ArrayList<>();
+        List<String> extra = new ArrayList<>();
+
+        for (Object2IntMap.Entry<Holder<Enchantment>> entry : stored.entrySet()) {
+            int level = entry.getIntValue();
+            String name = Enchantment.getFullname(entry.getKey(), level).getString();
+            String id = idOf(entry.getKey());
+            Integer minLevel = id == null ? null : targets.get(id);
+
+            if (minLevel != null && level >= minLevel) matched.add(name);
+            else extra.add(name);
+        }
+
+        String description = String.join(", ", matched);
+        if (!extra.isEmpty()) description += " (+ " + String.join(", ", extra) + ")";
+
+        return description;
     }
 
     private void stop(String reason) {

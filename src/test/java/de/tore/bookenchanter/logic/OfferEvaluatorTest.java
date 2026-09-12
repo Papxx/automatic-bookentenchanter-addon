@@ -255,6 +255,60 @@ class OfferEvaluatorTest {
         }
     }
 
+    @Nested
+    @DisplayName("matches")
+    class Matches {
+
+        @Test
+        @DisplayName("target at the required level is a hit")
+        void targetAtRequiredLevel() {
+            assertTrue(OfferEvaluator.matches(Map.of("sharpness", 4), Map.of("sharpness", 4)));
+        }
+
+        @Test
+        @DisplayName("target above the required level is a hit")
+        void targetAboveRequiredLevel() {
+            assertTrue(OfferEvaluator.matches(Map.of("sharpness", 5), Map.of("sharpness", 4)));
+        }
+
+        @Test
+        @DisplayName("target below the required level is no hit")
+        void targetBelowRequiredLevel() {
+            assertFalse(OfferEvaluator.matches(Map.of("sharpness", 3), Map.of("sharpness", 4)));
+        }
+
+        @Test
+        @DisplayName("any matching enchantment counts, not just the advertised clue")
+        void anyMatchingEnchantmentCounts() {
+            Map<String, Integer> onBook = Map.of("looting", 1, "unbreaking", 3);
+
+            assertTrue(OfferEvaluator.matches(onBook, Map.of("unbreaking", 3)));
+        }
+
+        @Test
+        @DisplayName("book without any target enchantment is no hit")
+        void bookWithoutTargets() {
+            Map<String, Integer> onBook = Map.of("fire_aspect", 2, "knockback", 1);
+
+            assertFalse(OfferEvaluator.matches(onBook, Map.of("sharpness", 4)));
+        }
+
+        @Test
+        @DisplayName("empty book or empty targets are no hit")
+        void emptyInputs() {
+            assertFalse(OfferEvaluator.matches(Map.of(), Map.of("sharpness", 4)));
+            assertFalse(OfferEvaluator.matches(Map.of("sharpness", 4), Map.of()));
+            assertFalse(OfferEvaluator.matches(Map.of(), Map.of()));
+        }
+
+        @Test
+        @DisplayName("null arguments are no hit instead of throwing")
+        void nullInputs() {
+            assertFalse(OfferEvaluator.matches(null, Map.of("sharpness", 4)));
+            assertFalse(OfferEvaluator.matches(Map.of("sharpness", 4), null));
+        }
+    }
+
     @Test
     @DisplayName("logic package stays free of Minecraft types (docs/PLAN.md M4 acceptance)")
     void logicPackageHasNoMinecraftTypes() throws Exception {

@@ -43,6 +43,25 @@ public final class OfferEvaluator {
     }
 
     /**
+     * Whether a finished book hit any target. A book can carry more enchantments than the clue
+     * promised, so every stored enchantment is checked, not just the one that was advertised
+     * (docs/PLAN.md fact F4).
+     *
+     * @param enchants the enchantments on the book, registry path to level
+     * @param targets  active targets, registry path to minimum level
+     */
+    public static boolean matches(Map<String, Integer> enchants, Map<String, Integer> targets) {
+        if (enchants == null || targets == null) return false;
+
+        for (Map.Entry<String, Integer> enchant : enchants.entrySet()) {
+            Integer minLevel = targets.get(enchant.getKey());
+            if (minLevel != null && enchant.getValue() >= minLevel) return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Whether the top slot can be enchanted purely to reroll the offers. Rerolling needs an actual
      * offer in slot 0, one lapis, and - outside creative - enough levels for its cost.
      *
