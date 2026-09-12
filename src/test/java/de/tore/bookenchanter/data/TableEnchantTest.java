@@ -12,6 +12,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -138,6 +139,23 @@ class TableEnchantTest {
 
         assertEquals("minecraft", key.identifier().getNamespace(), enchant + " left the vanilla namespace");
         assertEquals(enchant.id(), key.identifier().getPath(), enchant + " resolved to the wrong path");
+    }
+
+    @Test
+    @DisplayName("key() is interned, so it works as a map key across calls")
+    void keyIsUsableAsMapKey() {
+        // AutoBookEnchant stores targets in a Map<ResourceKey<Enchantment>, ...> and looks them up
+        // with a freshly built key(). ResourceKey does not override equals, so this only works
+        // because ResourceKey.create interns. Guard it - a regression would silently empty
+        // activeTargets().
+        Map<ResourceKey<Enchantment>, String> byKey = new HashMap<>();
+        for (TableEnchant enchant : TableEnchant.values()) byKey.put(enchant.key(), enchant.id());
+
+        assertEquals(TableEnchant.values().length, byKey.size(), "keys collided or duplicated");
+
+        for (TableEnchant enchant : TableEnchant.values()) {
+            assertEquals(enchant.id(), byKey.get(enchant.key()), "lookup failed for " + enchant);
+        }
     }
 
     private static TableEnchant byId(String id) {

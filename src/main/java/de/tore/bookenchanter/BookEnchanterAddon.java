@@ -1,6 +1,7 @@
 package de.tore.bookenchanter;
 
 import com.mojang.logging.LogUtils;
+import de.tore.bookenchanter.modules.AutoBookEnchant;
 import meteordevelopment.meteorclient.addons.GithubRepo;
 import meteordevelopment.meteorclient.addons.MeteorAddon;
 import meteordevelopment.meteorclient.systems.modules.Category;
@@ -15,7 +16,7 @@ public class BookEnchanterAddon extends MeteorAddon {
     public void onInitialize() {
         LOG.info("Initializing Book Enchanter");
 
-        // Modules are registered here once AutoBookEnchant exists (M5).
+        Modules.get().add(new AutoBookEnchant());
     }
 
     @Override

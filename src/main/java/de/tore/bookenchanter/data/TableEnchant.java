@@ -58,14 +58,25 @@ public enum TableEnchant {
 
     /** Grouping used for the collapsed setting groups in the module UI. */
     public enum Category {
-        ARMOR,
-        MELEE,
-        MACE,
-        TOOLS,
-        BOW,
-        CROSSBOW,
-        TRIDENT,
-        FISHING
+        ARMOR("Rüstung"),
+        MELEE("Nahkampf"),
+        MACE("Streitkolben"),
+        TOOLS("Werkzeuge"),
+        BOW("Bogen"),
+        CROSSBOW("Armbrust"),
+        TRIDENT("Dreizack"),
+        FISHING("Angel");
+
+        private final String title;
+
+        Category(String title) {
+            this.title = title;
+        }
+
+        /** German group title shown in the module settings, per docs/PLAN.md milestone M3. */
+        public String title() {
+            return title;
+        }
     }
 
     private final Category category;

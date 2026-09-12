@@ -90,6 +90,8 @@ tasks {
     }
 
     withType<JavaCompile>().configureEach {
+        // Pin the source encoding so German setting titles survive on any platform default.
+        options.encoding = "UTF-8"
         options.compilerArgs.addAll(
             listOf(
                 "-Xlint:deprecation",
