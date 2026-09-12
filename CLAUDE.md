@@ -24,7 +24,8 @@ Linux/macOS: `./gradlew build` usw.
 - Package: `de.tore.bookenchanter` · Mod-ID: `book-enchanter` · Modul-Name (kebab-case): `auto-book-enchant`
 - Minecraft 26.x ist unobfuskiert → **Mojang-Namen** (`EnchantmentMenu`, `Identifier`, `BlockPos`, `DataComponents`).
   Keine Yarn-Namen aus alten Tutorials verwenden (`MinecraftClient`, `EnchantmentScreenHandler`, `ScreenHandler` …).
-- Code, Bezeichner und Kommentare auf Englisch. Chat-Meldungen im Spiel auf Deutsch.
+- Code, Bezeichner und Kommentare auf Englisch. **Auch alle Texte im Spiel auf Englisch**
+  (Setting-Namen, Beschreibungen, Gruppentitel, Chat-Meldungen) - der Mod soll international nutzbar sein.
 - Meteor-Patterns nachbauen, nicht erfinden. Referenzen im Meteor-Quellcode:
   `AutoBrewer`, `AutoSmelter` (Container-Automation), `StatusEffectAmplifierMapSettingScreen`,
   `BlockESP`/`ESPBlockData` (GenericSetting + eigene GUI), `InvUtils`, `SlotUtils`.

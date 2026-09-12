@@ -83,7 +83,7 @@ public class AutoBookEnchant extends Module {
 
     private final Setting<Integer> delay = sgGeneral.add(new IntSetting.Builder()
         .name("delay")
-        .description("Ticks zwischen zwei Aktionen. Niedriger ist schneller, aber auffälliger.")
+        .description("Ticks between two actions. Lower is faster but more obvious.")
         .defaultValue(4)
         .range(1, 40)
         .sliderRange(1, 20)
@@ -92,28 +92,28 @@ public class AutoBookEnchant extends Module {
 
     private final Setting<Boolean> useTop = sgGeneral.add(new BoolSetting.Builder()
         .name("use-top")
-        .description("Obersten Slot als Treffer zulassen. Standardmäßig aus, weil dieser Slot zum Rerollen dient.")
+        .description("Let the top slot count as a hit. Off by default because this slot is used for rerolling.")
         .defaultValue(false)
         .build()
     );
 
     private final Setting<Boolean> useMiddle = sgGeneral.add(new BoolSetting.Builder()
         .name("use-middle")
-        .description("Mittleren Slot als Treffer zulassen.")
+        .description("Let the middle slot count as a hit.")
         .defaultValue(true)
         .build()
     );
 
     private final Setting<Boolean> useBottom = sgGeneral.add(new BoolSetting.Builder()
         .name("use-bottom")
-        .description("Untersten Slot als Treffer zulassen.")
+        .description("Let the bottom slot count as a hit.")
         .defaultValue(true)
         .build()
     );
 
     private final Setting<Integer> maxRerolls = sgGeneral.add(new IntSetting.Builder()
         .name("max-rerolls")
-        .description("Maximale Anzahl Rerolls, danach Stopp. 0 = unbegrenzt.")
+        .description("Stop after this many rerolls. 0 means unlimited.")
         .defaultValue(0)
         .range(0, 10000)
         .sliderRange(0, 10000)
@@ -122,7 +122,7 @@ public class AutoBookEnchant extends Module {
 
     private final Setting<Integer> targetCount = sgGeneral.add(new IntSetting.Builder()
         .name("target-count")
-        .description("Stopp nach so vielen Treffern. 0 = unbegrenzt.")
+        .description("Stop after this many hits. 0 means unlimited.")
         .defaultValue(0)
         .range(0, 1000)
         .sliderRange(0, 1000)
@@ -131,7 +131,7 @@ public class AutoBookEnchant extends Module {
 
     private final Setting<Integer> minLevels = sgGeneral.add(new IntSetting.Builder()
         .name("min-levels")
-        .description("Stopp, sobald der Spieler weniger Level als diesen Wert hat.")
+        .description("Stop once you have fewer experience levels than this.")
         .defaultValue(30)
         .range(1, 100)
         .sliderRange(1, 100)
@@ -140,14 +140,14 @@ public class AutoBookEnchant extends Module {
 
     private final Setting<JunkBooks> junkBooks = sgGeneral.add(new EnumSetting.Builder<JunkBooks>()
         .name("junk-books")
-        .description("Was mit Büchern passiert, die kein Ziel getroffen haben.")
+        .description("What to do with books that hit none of your targets.")
         .defaultValue(JunkBooks.KEEP)
         .build()
     );
 
     private final Setting<Boolean> notify = sgGeneral.add(new BoolSetting.Builder()
         .name("notify")
-        .description("Bei jedem Treffer eine Chat-Meldung ausgeben.")
+        .description("Print a chat message on every hit.")
         .defaultValue(true)
         .build()
     );
@@ -170,7 +170,7 @@ public class AutoBookEnchant extends Module {
 
     public AutoBookEnchant() {
         super(BookEnchanterAddon.CATEGORY, "auto-book-enchant",
-            "Verzaubert am Tisch automatisch Bücher, bis eine Ziel-Verzauberung mit dem gewünschten Mindestlevel angeboten wird.");
+            "Enchants books at an enchanting table until a target enchantment is offered at your chosen minimum level.");
 
         Map<TableEnchant.Category, SettingGroup> groups = new EnumMap<>(TableEnchant.Category.class);
         for (TableEnchant.Category category : TableEnchant.Category.values()) {
@@ -183,14 +183,14 @@ public class AutoBookEnchant extends Module {
 
             Setting<Boolean> on = group.add(new BoolSetting.Builder()
                 .name(name)
-                .description("Ziel: " + enchant.id() + " · ca. " + enchant.rerollsAt30() + " Rerolls bei 30 Leveln")
+                .description("Target " + enchant.id() + " - about " + enchant.rerollsAt30() + " rerolls at 30 levels.")
                 .defaultValue(false)
                 .build()
             );
 
             Setting<Integer> minLevel = group.add(new IntSetting.Builder()
                 .name(name + "-level")
-                .description("Mindestlevel für " + enchant.id() + ". Tisch-Maximum: " + enchant.maxTable() + ".")
+                .description("Minimum level for " + enchant.id() + ". Table maximum is " + enchant.maxTable() + ".")
                 .defaultValue(enchant.maxTable())
                 .range(1, enchant.maxTable())
                 .sliderRange(1, enchant.maxTable())
@@ -218,7 +218,7 @@ public class AutoBookEnchant extends Module {
         lapisSpent = 0;
 
         if (activeTargets().isEmpty()) {
-            warning("Keine Ziel-Verzauberung aktiv - bitte erst eine Kategorie aufklappen und ein Ziel anhaken.");
+            warning("No target enchantment selected. Open a category below and tick at least one enchantment.");
             toggle();
             return;
         }
@@ -249,7 +249,7 @@ public class AutoBookEnchant extends Module {
         }
 
         if (!missing.isEmpty()) {
-            warning("Dieser Server bietet folgende Ziele nicht am Tisch an: " + String.join(", ", missing));
+            warning("This server does not offer these targets at the table: " + String.join(", ", missing));
         }
     }
 
@@ -306,7 +306,7 @@ public class AutoBookEnchant extends Module {
         if (state == State.WAIT_OFFERS) {
             offerTimeouts++;
             if (offerTimeouts >= MAX_OFFER_TIMEOUTS) {
-                stop("Der Server hat " + MAX_OFFER_TIMEOUTS + " mal keine Angebote geschickt.");
+                stop("The server sent no offers " + MAX_OFFER_TIMEOUTS + " times in a row.");
                 return;
             }
         }
@@ -324,7 +324,7 @@ public class AutoBookEnchant extends Module {
         }
 
         if (resultTakeAttempted) {
-            stop("Der Tisch lässt sich nicht leeren - vermutlich ist das Inventar voll.");
+            stop("Cannot clear the table slot - your inventory is probably full.");
             return;
         }
 
@@ -338,7 +338,7 @@ public class AutoBookEnchant extends Module {
         resultTakeAttempted = true;
 
         if (hit && targetCount.get() > 0 && hits >= targetCount.get()) {
-            stop("Ziel-Anzahl von " + targetCount.get() + " erreicht.");
+            stop("Reached the target count of " + targetCount.get() + ".");
         }
     }
 
@@ -349,13 +349,13 @@ public class AutoBookEnchant extends Module {
         }
 
         if (lapisAttempts >= MAX_LAPIS_ATTEMPTS) {
-            stop("Lapis landet nicht im Tisch.");
+            stop("Lapis is not reaching the table.");
             return;
         }
 
         FindItemResult lapis = InvUtils.find(Items.LAPIS_LAZULI);
         if (!lapis.found()) {
-            stop("Kein Lapislazuli im Inventar.");
+            stop("No lapis lazuli in your inventory.");
             return;
         }
 
@@ -371,7 +371,7 @@ public class AutoBookEnchant extends Module {
 
         FindItemResult book = InvUtils.find(Items.BOOK);
         if (!book.found()) {
-            stop("Keine Bücher mehr im Inventar.");
+            stop("No books left in your inventory.");
             return;
         }
 
@@ -396,7 +396,7 @@ public class AutoBookEnchant extends Module {
         boolean creative = mc.player.hasInfiniteMaterials();
 
         if (!creative && playerLevel < minLevels.get()) {
-            stop("Nur noch " + playerLevel + " Level, Untergrenze ist " + minLevels.get() + ".");
+            stop("Only " + playerLevel + " levels left, the limit is " + minLevels.get() + ".");
             return;
         }
 
@@ -405,12 +405,12 @@ public class AutoBookEnchant extends Module {
 
         if (slot < 0) {
             if (!OfferEvaluator.canReroll(offers, playerLevel, menu.getGoldCount(), creative)) {
-                stop("Reroll nicht möglich - zu wenig Level oder Lapis.");
+                stop("Cannot reroll - not enough levels or lapis.");
                 return;
             }
 
             if (maxRerolls.get() > 0 && rerolls >= maxRerolls.get()) {
-                stop("Reroll-Limit von " + maxRerolls.get() + " erreicht.");
+                stop("Reached the reroll limit of " + maxRerolls.get() + ".");
                 return;
             }
 
@@ -486,7 +486,7 @@ public class AutoBookEnchant extends Module {
         if (!OfferEvaluator.matches(onBook, active)) return false;
 
         hits++;
-        if (notify.get()) info("Treffer: " + describe(stored, active));
+        if (notify.get()) info("Hit: " + describe(stored, active));
 
         return true;
     }
@@ -513,9 +513,9 @@ public class AutoBookEnchant extends Module {
     }
 
     private void stop(String reason) {
-        error("Gestoppt: " + reason);
-        info("Statistik: " + booksUsed + " Bücher, " + rerolls + " Rerolls, " + hits + " Treffer, "
-            + levelsSpent + " Level und " + lapisSpent + " Lapis verbraucht.");
+        error("Stopped: " + reason);
+        info("Stats: " + booksUsed + " books, " + rerolls + " rerolls, " + hits + " hits, "
+            + levelsSpent + " levels and " + lapisSpent + " lapis spent.");
         toggle();
     }
 
@@ -546,6 +546,6 @@ public class AutoBookEnchant extends Module {
 
     @Override
     public String getInfoString() {
-        return hits + " Treffer / " + rerolls + " Rerolls";
+        return hits + " hits / " + rerolls + " rerolls";
     }
 }

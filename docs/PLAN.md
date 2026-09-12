@@ -191,9 +191,9 @@ Aufgaben:
   | `min-levels` | Int | 30 | 1–100 |
   | `junk-books` | Enum `KEEP`, `DROP` | `KEEP` | |
   | `notify` | Bool | true | |
-- [ ] Pro Kategorie eine eingeklappte Gruppe (`createGroup(name, false)`), Titel deutsch („Rüstung“, „Nahkampf“, „Streitkolben“, „Werkzeuge“, „Bogen“, „Armbrust“, „Dreizack“, „Angel“).
+- [ ] Pro Kategorie eine eingeklappte Gruppe (`createGroup(name, false)`), Titel englisch („Armor“, „Melee“, „Mace“, „Tools“, „Bow“, „Crossbow“, „Trident“, „Fishing“).
 - [ ] Pro Verzauberung: `BoolSetting` Name = ID in kebab-case, Default false; `IntSetting` Name `<id>-level`, Default = `maxTable`, `range(1,maxTable)`, `sliderRange(1,maxTable)`, `.visible(on::get)`.
-- [ ] Beschreibung des Bool-Settings enthält `~Rerolls@30` (z. B. „Ziel: protection · ca. 15 Rerolls bei 30 Leveln“).
+- [ ] Beschreibung des Bool-Settings enthält `~Rerolls@30` (z. B. „Target protection - about 15 rerolls at 30 levels.“).
 - [ ] Map `ResourceKey<Enchantment> → Target` aufbauen; Hilfsmethode `Map<String,Integer> activeTargets()` (ID → Mindestlevel).
 Akzeptanz: Build grün. (Sichtprüfung im Spiel macht Tore.)
 
@@ -234,12 +234,12 @@ Aufgaben:
 - [ ] `DECIDE`: `Offer[]` aus `costs/enchantClue/levelClue` bauen (ID via Holder-Map → `unwrapKey()` → `identifier()`; nur Namespace `minecraft` akzeptieren und den **Pfad** mit `TableEnchant.id` vergleichen, andere Namespaces → `enchantId = null`). `OfferEvaluator.pick(...)`; −1 → `canReroll` prüfen → Slot 0 (`rerolls++`, `max-rerolls` prüfen). Level < `min-levels` → Stopp. Klick: `mc.gameMode.handleInventoryButtonClick(menu.containerId, slot)`.
 - [ ] `WAIT_RESULT`: warten, bis Slot 0 ein `ENCHANTED_BOOK` ist. Timeout 40 Ticks → `TAKE_RESULT`.
 - [ ] `onActivate()`: Zähler zurücksetzen; wenn keine Ziele aktiv → Warnung + deaktivieren.
-- [ ] Stopp = Chat-Meldung (deutsch, Grund + Statistik) + `toggle()`.
+- [ ] Stopp = Chat-Meldung (englisch, Grund + Statistik) + `toggle()`.
 Akzeptanz: Build grün; Code-Review-Checkliste: kein Klick ohne vorherige Zustandsprüfung, jeder Wartezustand hat Timeout.
 
 ### M6 – Ergebnis, Statistik, Datapack-Check
 Aufgaben:
-- [ ] `handleResult`: `STORED_ENCHANTMENTS` lesen; Treffer, wenn **irgendeine** Verzauberung Ziel mit ausreichendem Level ist (auch bei Reroll-Büchern). Treffer → `hits++`, bei `notify` Chat „✔ Treffer: Sharpness IV (+ Unbreaking III)“ mit Übersetzungsnamen. Kein Treffer + `DROP` → Buch nach dem Rausnehmen droppen.
+- [ ] `handleResult`: `STORED_ENCHANTMENTS` lesen; Treffer, wenn **irgendeine** Verzauberung Ziel mit ausreichendem Level ist (auch bei Reroll-Büchern). Treffer → `hits++`, bei `notify` Chat „Hit: Sharpness IV (+ Unbreaking III)“ mit Übersetzungsnamen. Kein Treffer + `DROP` → Buch nach dem Rausnehmen droppen.
 - [ ] Statistik: `rerolls`, `hits`, `booksUsed`, `levelsSpent` (Summe `slot+1`), `lapisSpent` (Summe `slot+1`). Bei Stopp ausgeben.
 - [ ] `target-count` erreicht → Stopp.
 - [ ] Beim Aktivieren: aktive Ziele gegen Server-Tag `IN_ENCHANTING_TABLE` prüfen; fehlende IDs → Warnung (Datapack/Server-Änderung).
