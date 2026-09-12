@@ -29,6 +29,7 @@
 | `.byId(int)` | `public abstract T IdMap.byId(int)` | ✅ | – |
 | `Holder#unwrapKey()` | `public abstract Optional<ResourceKey<T>> unwrapKey()` | ✅ | – |
 | `ResourceKey.create(Registries.ENCHANTMENT, Identifier…)` | `public static <T> ResourceKey<T> create(ResourceKey<? extends Registry<T>>, Identifier)` | ✅ | – |
+| `ResourceKey` → Identifier auslesen | `public Identifier identifier()` | ✅ | – |
 | `Identifier.withDefaultNamespace(String)` | `public static Identifier withDefaultNamespace(String)` | ✅ | – |
 | `DataComponents.STORED_ENCHANTMENTS` | `public static final DataComponentType<ItemEnchantments> STORED_ENCHANTMENTS` | ✅ | – |
 | `ItemEnchantments` Iteration (Holder + Level) | `public Set<Object2IntMap.Entry<Holder<Enchantment>>> entrySet()` | ✅ | – |
@@ -73,3 +74,8 @@ Beim Prüfen aufgefallen – relevant für M4/M5/M6:
 6. **Zugriffspfade bestätigt:** `Minecraft.level` (`ClientLevel`), `Minecraft.player` (`LocalPlayer`),
    `Minecraft.gameMode` (`MultiPlayerGameMode`), `Player.containerMenu` (`AbstractContainerMenu`,
    nicht final), `Player.experienceLevel` (`public int`) für den Level-Check in M4/M5.
+7. **`ResourceKey.identifier()`** heißt in 26.2 so – nicht mehr `location()` wie in älteren
+   Mappings. Zusammen mit `Identifier.getNamespace()` / `.getPath()` ist das in M5 der Weg von
+   `enchantClue[s]` zur Vergleichs-ID.
+8. **`TableEnchant.key()` läuft ohne Minecraft-Bootstrap**, also auch im reinen JUnit-Test
+   (in `TableEnchantTest` für alle 36 Einträge abgesichert).
