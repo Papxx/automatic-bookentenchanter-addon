@@ -1,139 +1,97 @@
-# Meteor Addon Template
+# Book Enchanter
 
-A template to allow easy usage of the Meteor Addon API.
+A [Meteor Client](https://meteorclient.com) addon that farms enchanted books for you.
 
-### How to use
+Open an enchanting table, pick the enchantments you want and the minimum level you will accept, and
+the module does the rest: insert a book, top up the lapis, read the three offers, and either take
+the one that matches your target or reroll through the top slot and try again. It stops cleanly when
+it runs out of books, lapis or levels.
 
-#### Use GitHub Template (Recommended)
+**Minecraft 1.26.2 · Fabric · requires Meteor Client**
 
-- Click the green `Use this template` button in the top right corner of this page.  
-  This will create a new repository with this template and a clean history.
+---
 
-#### Clone Manually
+## Features
 
-- Alternatively, clone this repository using these commands for a clean history:
-  ```bash
-  git clone --depth 1 https://github.com/MeteorDevelopment/meteor-addon-template your-addon-name
-  cd your-addon-name
-  rm -rf .git
-  git init
-  git add .
-  git commit -m "Initial commit from template"
-  ```
+- **One toggle and one slider per enchantment.** All 36 enchantments obtainable from a table,
+  grouped by category. Each has an on/off switch and a minimum level slider, capped at the highest
+  level a table can actually produce for that enchantment - which is often lower than the game
+  maximum (Sharpness caps at IV, Thorns at II).
+- **Catches every hit, not just the advertised one.** A book can end up with more enchantments than
+  the offer promised, so the result is checked against all your targets.
+- **Bookshelf prediction.** The module works out which bookshelf count would offer one of your
+  targets for the current seed, so you can rebuild instead of burning books. No seed cracking
+  involved - the server hands the client its enchantment seed, and the prediction is verified
+  against the offers you actually received before it is shown.
+- **Reroll and target limits.** Stop after N rerolls or N hits, and keep a level floor so you never
+  drain your XP completely.
+- **Junk handling.** Books that miss every target can be dropped instead of filling your inventory.
+- **Datapack aware.** On activation your targets are checked against the server's
+  `#minecraft:in_enchanting_table` tag, and you get a warning for anything that server will never
+  offer.
 
-#### Development
+## Install
 
-- Use this template to add custom modules, commands, HUDs, and other features to Meteor Client.
-- To test, run the `Minecraft Client` configuration in your IDE.
-  This will start a Minecraft client with the Meteor Client mod and your addon loaded.
-- To build, run the gradle `build` task. This will create a JAR file in the `build/libs` folder.
-    - Move the JAR file to the `mods` folder of your Minecraft installation, alongside the Meteor Client mod and run the
-      game.
+1. Install [Fabric Loader](https://fabricmc.net/use/) 0.19.3 or newer for Minecraft 1.26.2.
+2. Put [Meteor Client](https://meteorclient.com) (26.2) in your `mods` folder.
+3. Drop `book-enchanter-<version>.jar` in the same `mods` folder.
 
-### Updating to newer Minecraft versions
+## Usage
 
-To update this template to a newer Minecraft version, follow these steps:
+1. Open the Meteor GUI and find **auto-book-enchant** in the **Book Enchanter** category.
+2. Expand a category (Armor, Melee, Tools, ...) and tick at least one enchantment. Without a target
+   the module refuses to start and tells you so.
+3. Adjust the minimum level slider for that enchantment if you will accept less than the maximum.
+4. Stand at an enchanting table with books and lapis in your inventory, open the table, and enable
+   the module.
 
-1. Ensure a Meteor Client snapshot is available for the new Minecraft version.
-2. Update `gradle/libs.versions.toml` (the versions catalog):
-    - Set the version entries to the new versions. Common keys to update are:
-        - `versions.minecraft` - Minecraft version
-        - `versions.fabric-loader` - Fabric loader version
-        - `versions.meteor` - Meteor Client snapshot version
-    - If your addon depends on other libraries listed under the `[libraries]` section, update their versions there as
-      needed.
-    - After editing, refresh Gradle dependencies and rebuild your project in the IDE.
-3. Update Loom:
-    - Change the `loom` version in `gradle/libs.versions.toml` (the `versions.loom` entry) to the latest version
-      compatible with the new Minecraft version.
-4. Update the Gradle wrapper:
-    - Run the wrapper update command for your platform. Examples:
-      - Unix / macOS / Windows (Powershell): `./gradlew wrapper --gradle-version <version> && ./gradlew wrapper`
-      - Windows (cmd.exe): `gradlew.bat wrapper --gradle-version <version> && gradlew.bat wrapper`
-    - This updates and regenerates the Gradle Wrapper scripts (`gradlew`, `gradlew.bat`, etc.) for the specified version.
-5. Update your source code:
-    - Adjust for Minecraft source changes: method names, imports, mixins, etc.
-    - Check for Meteor Client API changes that may affect your addon by comparing against the
-      [master branch](https://github.com/MeteorDevelopment/meteor-client/tree/master).
-6. Build and test:
-    - Run the gradle `build` task.
-    - Confirm the build succeeds and your addon works with the new Minecraft version.
+### Settings
 
-### Project structure
+| Setting | Default | What it does |
+|---|---|---|
+| `delay` | 4 | Ticks between two actions. Lower is faster but more obvious. |
+| `use-top` / `use-middle` / `use-bottom` | off / on / on | Which offer slots may count as a hit. The top slot is off by default because it is used for rerolling. |
+| `max-rerolls` | 0 | Stop after this many rerolls. 0 means unlimited. |
+| `target-count` | 0 | Stop after this many hits. 0 means unlimited. |
+| `min-levels` | 30 | Stop once you have fewer experience levels than this. |
+| `junk-books` | KEEP | `DROP` throws away books that hit no target. |
+| `predict` | on | Print which bookshelf count would offer a target for the current seed. |
+| `auto-open` | off | Open the nearest enchanting table in reach by yourself. |
+| `notify` | on | Print a chat message on every hit. |
 
-```text
-.
-│── .github
-│   ╰── workflows
-│       │── dev_build.yml
-│       ╰── pull_request.yml
-│── gradle
-│   │── libs.versions.toml
-│   ╰── wrapper
-│       │── gradle-wrapper.jar
-│       ╰── gradle-wrapper.properties
-│── src
-│   ╰── main
-│       │── java
-│       │   ╰── com
-│       │       ╰── example
-│       │           ╰── addon
-│       │               │── commands
-│       │               │   ╰── CommandExample
-│       │               │── hud
-│       │               │   ╰── HudExample
-│       │               │── modules
-│       │               │   ╰── ModuleExample
-│       │               ╰── AddonTemplate
-│       ╰── resources
-│           │── assets
-│           │   ╰── template
-│           │       ╰── icon.png
-│           │── addon-template.mixins.json
-│           ╰── fabric.mod.json
-│── .editorconfig
-│── .gitignore
-│── build.gradle.kts
-│── gradle.properties
-│── gradlew
-│── gradlew.bat
-│── LICENSE
-│── README.md
-╰── settings.gradle.kts
+### How rerolling works
+
+The offers depend on your enchantment seed, and that seed only changes when you actually enchant
+something. Taking the book in and out does nothing. So a "reroll" means enchanting the cheapest slot
+to burn the current seed - which costs one level, one lapis and one book, and produces a junk
+enchanted book. That is expected: a run that is looking for Sharpness IV will produce a lot of
+level-1 books on the way there.
+
+The `predict` setting exists to avoid that cost. If it reports that 12 bookshelves would offer your
+target right now, rebuilding the shelves is free compared to rerolling.
+
+## Building
+
+```bash
+./gradlew build          # compile and run the unit tests
+./gradlew runClient      # launch Minecraft with the addon
 ```
 
-This is the default project structure. Each folder/file has a specific purpose.  
-Here is a brief explanation of the ones you might need to modify:
+The jar ends up in `build/libs/`.
 
-- `.github/workflows`: Contains the GitHub Actions configuration files.
-- `gradle`: Contains the Gradle wrapper files and the versions catalog.  
-  - `libs.versions.toml`: Defines version numbers for Minecraft, Loom, Meteor, and other dependencies.
-  - `wrapper`: Contains the Gradle wrapper executable files.  
-    To update the Gradle wrapper executable itself, run the wrapper update command (examples are shown above).
-- `src/main/java/com/example/addon`: Contains the main class of the addon.  
-  Here you can register your custom commands, modules, and HUDs.  
-  Edit the `getPackage` method to reflect the package of your addon.
-- `src/main/resources`: Contains the resources of the addon.
-    - `assets`: Contains the assets of the addon.  
-      You can add your own assets here, separated in subfolders.
-        - `template`: Contains the assets of the template.  
-          You can replace the `icon.png` file with your own addon icon.  
-          Also, rename this folder to reflect the name of your addon.
-    - `addon-template.mixins.json`: Contains the Mixin configuration for the addon.  
-      You can add your own mixins in the `client` array.
-    - `fabric.mod.json`: Contains the metadata of the addon.  
-      Edit the various fields to reflect the metadata of your addon.
-- `build.gradle.kts`: Contains the Gradle build script.  
-  You can manage the dependencies of the addon here.  
-  Remember to keep the `fabric-loom` version up-to-date.
-- `gradle.properties`: Contains additional build properties used by the build script
-  (for example `maven_group` and `archives_base_name`).  
-  Dependency and platform version numbers are stored in `gradle/libs.versions.toml`.
-- `LICENSE`: Contains the license of the addon.  
-  You can edit this file to change the license of your addon.
-- `README.md`: Contains the documentation of the addon.  
-  You can edit this file to reflect the documentation of your addon, and showcase its features.
+The decision logic in `de.tore.bookenchanter.logic` deliberately contains no Minecraft types, so it
+is covered by plain JUnit tests - including a test that asserts the compiled classes reference
+nothing from `net.minecraft`.
+
+## Credits
+
+Built on the official
+[meteor-addon-template](https://github.com/MeteorDevelopment/meteor-addon-template).
+
+[Earthcomputer/clientcommands](https://github.com/Earthcomputer/clientcommands) was looked at as a
+reference for what is possible with enchantment seeds. No code from it is used - it is LGPL-3.0 and
+this project deliberately keeps its distance.
 
 ## License
 
-This template is available under the CC0 license. Feel free to use it for your own projects.
+See [LICENSE](LICENSE).

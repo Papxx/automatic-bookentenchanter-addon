@@ -3,6 +3,7 @@ package de.tore.bookenchanter.modules;
 import de.tore.bookenchanter.BookEnchanterAddon;
 import de.tore.bookenchanter.data.TableEnchant;
 import de.tore.bookenchanter.data.Target;
+import de.tore.bookenchanter.game.OfferSimulator;
 import de.tore.bookenchanter.logic.Offer;
 import de.tore.bookenchanter.logic.OfferEvaluator;
 import meteordevelopment.meteorclient.events.world.TickEvent;
@@ -14,6 +15,7 @@ import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
+import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.core.Holder;
@@ -22,7 +24,13 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.tags.EnchantmentTags;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.inventory.EnchantmentMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -145,6 +153,20 @@ public class AutoBookEnchant extends Module {
         .build()
     );
 
+    private final Setting<Boolean> predict = sgGeneral.add(new BoolSetting.Builder()
+        .name("predict")
+        .description("Work out which bookshelf count would offer one of your targets, and print it once per seed.")
+        .defaultValue(true)
+        .build()
+    );
+
+    private final Setting<Boolean> autoOpen = sgGeneral.add(new BoolSetting.Builder()
+        .name("auto-open")
+        .description("Open the nearest enchanting table in reach by yourself.")
+        .defaultValue(false)
+        .build()
+    );
+
     private final Setting<Boolean> notify = sgGeneral.add(new BoolSetting.Builder()
         .name("notify")
         .description("Print a chat message on every hit.")
@@ -161,6 +183,8 @@ public class AutoBookEnchant extends Module {
     private int offerTimeouts;
     private int lapisAttempts;
     private boolean resultTakeAttempted;
+    private int lastPredictedSeed;
+    private boolean predictionUnavailable;
 
     private int rerolls;
     private int hits;
@@ -210,6 +234,8 @@ public class AutoBookEnchant extends Module {
         offerTimeouts = 0;
         lapisAttempts = 0;
         resultTakeAttempted = false;
+        lastPredictedSeed = 0;
+        predictionUnavailable = false;
 
         rerolls = 0;
         hits = 0;
@@ -263,6 +289,16 @@ public class AutoBookEnchant extends Module {
         if (!(mc.player.containerMenu instanceof EnchantmentMenu menu)) {
             // GUI closed mid-cycle: idle until it is open again, keeping the statistics.
             state = State.WAIT_MENU;
+
+            // Only reach for a table when no other container is in the way.
+            if (autoOpen.get() && mc.player.containerMenu == mc.player.inventoryMenu) {
+                if (actionCooldown > 0) actionCooldown--;
+                else {
+                    actionCooldown = delay.get() - 1;
+                    openNearestTable();
+                }
+            }
+
             return;
         }
 
@@ -404,6 +440,8 @@ public class AutoBookEnchant extends Module {
         int slot = OfferEvaluator.pick(offers, activeTargets(), allowedSlots(), playerLevel, creative);
 
         if (slot < 0) {
+            if (predict.get()) reportBookshelfHint(menu, offers);
+
             if (!OfferEvaluator.canReroll(offers, playerLevel, menu.getGoldCount(), creative)) {
                 stop("Cannot reroll - not enough levels or lapis.");
                 return;
@@ -510,6 +548,79 @@ public class AutoBookEnchant extends Module {
         if (!extra.isEmpty()) description += " (+ " + String.join(", ", extra) + ")";
 
         return description;
+    }
+
+    /**
+     * Tells the player which bookshelf count would offer one of their targets for the current seed.
+     *
+     * <p>Printed once per seed so it does not spam. The simulation is only trusted after it
+     * reproduces the offers the server actually sent; otherwise the player is told once that
+     * prediction is unavailable rather than being given a wrong number.
+     */
+    private void reportBookshelfHint(EnchantmentMenu menu, Offer[] actual) {
+        int seed = menu.getEnchantmentSeed();
+        if (seed == lastPredictedSeed || predictionUnavailable || mc.level == null) return;
+        lastPredictedSeed = seed;
+
+        ItemStack stack = menu.getSlot(ITEM_SLOT).getItem();
+        if (stack.isEmpty()) return;
+
+        int currentPower = OfferSimulator.findMatchingPower(mc.level.registryAccess(), stack, seed, actual);
+        if (currentPower < 0) {
+            predictionUnavailable = true;
+            warning("Offer prediction does not match this server, so it stays off for this run.");
+            return;
+        }
+
+        Map<String, Integer> active = activeTargets();
+        boolean[] allowed = allowedSlots();
+        List<String> hints = new ArrayList<>();
+
+        for (int power = 0; power <= OfferSimulator.MAX_POWER; power++) {
+            if (power == currentPower) continue;
+
+            Offer[] simulated = OfferSimulator.simulate(mc.level.registryAccess(), stack, seed, power);
+            int hit = OfferEvaluator.pick(simulated, active, allowed, mc.player.experienceLevel,
+                mc.player.hasInfiniteMaterials());
+
+            if (hit >= 0) {
+                hints.add(power + " shelves -> " + simulated[hit].enchantId() + " " + simulated[hit].level());
+            }
+        }
+
+        if (hints.isEmpty()) info("No bookshelf count hits a target with this seed - rerolling.");
+        else info("Target reachable without a reroll: " + String.join(", ", hints)
+            + " (you have " + currentPower + ").");
+    }
+
+    /** Right-clicks the closest enchanting table within reach. */
+    private void openNearestTable() {
+        BlockPos playerPos = mc.player.blockPosition();
+        double reach = mc.player.blockInteractionRange();
+        int range = (int) Math.ceil(reach);
+
+        BlockPos closest = null;
+        double closestDistance = Double.MAX_VALUE;
+
+        for (int x = -range; x <= range; x++) {
+            for (int y = -range; y <= range; y++) {
+                for (int z = -range; z <= range; z++) {
+                    BlockPos pos = playerPos.offset(x, y, z);
+                    if (mc.level.getBlockState(pos).getBlock() != Blocks.ENCHANTING_TABLE) continue;
+
+                    double distance = mc.player.position().distanceToSqr(Vec3.atCenterOf(pos));
+                    if (distance < closestDistance && distance <= reach * reach) {
+                        closestDistance = distance;
+                        closest = pos;
+                    }
+                }
+            }
+        }
+
+        if (closest == null) return;
+
+        BlockUtils.interact(new BlockHitResult(Vec3.atCenterOf(closest), Direction.UP, closest, false),
+            InteractionHand.MAIN_HAND, true);
     }
 
     private void stop(String reason) {
