@@ -98,3 +98,9 @@ tasks {
         )
     }
 }
+
+// Helper for API verification (M1): prints the main compile classpath so the
+// Minecraft and Meteor jars can be located for javap inspection.
+tasks.register("printClasspath") {
+    doLast { sourceSets["main"].compileClasspath.forEach { println(it) } }
+}
